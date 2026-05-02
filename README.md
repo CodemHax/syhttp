@@ -10,8 +10,11 @@ A simple, asynchronous Python HTTP client built from scratch using pure `asyncio
   - Supports query parameters (`params`).
   - Supports JSON payload (`json`).
   - Supports Form URL-encoded data and raw bytes (`data`).
+  - Supports manual cookies (`cookies`).
+  - Stores cookies from `Set-Cookie` and sends them on later matching requests.
   - Custom headers support.
 - **Raw Bytes Extraction**: Compile requests directly to raw HTTP bytes ready to be sent over a socket.
+- **Faster Response Reads**: Reads response bodies in larger chunks and joins them once, avoiding repeated byte copying.
 
 ## Installation
 
@@ -48,6 +51,28 @@ async def main():
 asyncio.run(main())
 ```
 
+### Cookies
+
+Pass cookies directly with the `cookies` argument:
+
+```python
+response = await syhttp.get(
+    "https://httpbin.org/cookies",
+    cookies={"session": "abc123"},
+)
+
+print(response.json()["cookies"])
+```
+
+`syhttp` also stores cookies returned by `Set-Cookie` and sends them on later requests to the same host:
+
+```python
+await syhttp.get("https://httpbin.org/cookies/set/theme/dark")
+
+response = await syhttp.get("https://httpbin.org/cookies")
+print(response.json()["cookies"])
+```
+
 ### Parsing URLs Manually
 
 If you only need the URL parser:
@@ -82,6 +107,7 @@ response = await syhttp.post("https://example.com/login", data={"username": "bob
 - `syhttp/request.py`: Logic for building HTTP request lines, headers, and body bytes.
 - `syhttp/api.py` and `syhttp/client.py`: High-level functions (`get`, `post`, etc.) and the networking engine.
 - `syhttp/response.py`: Response parsing and state.
+- `syhttp/cookies.py`: Small cookie jar used by the client.
 
 ## License
 
