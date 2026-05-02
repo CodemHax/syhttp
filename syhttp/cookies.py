@@ -1,21 +1,33 @@
-from http.cookies import SimpleCookie
 from typing import Dict, Optional
-
 from .url import URL
 
 
 class CookieJar:
     def __init__(self):
-        self.cookies: Dict[str, Dict[str, str]] = {}
+        self.cookies: Dict[str, Dict[str, dict]] = {}
 
     def get(self, url: URL) -> Dict[str, str]:
-        cookies: Dict[str, str] = {}
+        result: Dict[str, str] = {}
+        is_secure = url.scheme == "https"
 
-        for domain, values in self.cookies.items():
-            if url.host == domain or url.host.endswith("." + domain):
-                cookies.update(values)
+        for domain, path_map in self.cookies.items():
+            host_matches = url.host == domain or url.host.endswith("." + domain)
+            if not host_matches:
+                continue
 
-        return cookies
+            for cookie_path, jar in path_map.items():
+                path_matches = url.path == cookie_path or url.path.startswith(
+                    cookie_path.rstrip("/") + "/"
+                )
+                if not path_matches:
+                    continue
+
+                for name, meta in jar.items():
+                    if meta["secure"] and not is_secure:
+                        continue
+                    result[name] = meta["value"]
+
+        return result
 
     def update(self, url: URL, headers) -> None:
         set_cookie = headers.get("set-cookie")
@@ -26,10 +38,29 @@ class CookieJar:
             set_cookie = [set_cookie]
 
         for header in set_cookie:
-            cookie = SimpleCookie()
-            cookie.load(header)
+            parts = [p.strip() for p in header.split(";")]
+            if not parts or "=" not in parts[0]:
+                continue
 
-            for name, morsel in cookie.items():
-                domain: Optional[str] = morsel["domain"] or url.host
-                domain = domain.lstrip(".").lower()
-                self.cookies.setdefault(domain, {})[name] = morsel.value
+            name, _, value = parts[0].partition("=")
+            name = name.strip()
+            value = value.strip()
+
+            attrs: Dict[str, str] = {}
+            for attr in parts[1:]:
+                if "=" in attr:
+                    k, _, v = attr.partition("=")
+                    attrs[k.strip().lower()] = v.strip()
+                else:
+                    attrs[attr.strip().lower()] = "true"
+
+            domain: Optional[str] = attrs.get("domain") or url.host
+            domain = domain.lstrip(".").lower()
+
+            cookie_path: str = attrs.get("path", "/")
+            secure: bool = "secure" in attrs
+
+            self.cookies.setdefault(domain, {}).setdefault(cookie_path, {})[name] = {
+                "value": value,
+                "secure": secure,
+            }

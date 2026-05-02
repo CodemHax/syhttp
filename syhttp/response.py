@@ -1,4 +1,5 @@
 import json as vjson
+from typing import Optional
 from .exceptions import HTTPError
 
 
@@ -35,7 +36,36 @@ class Response:
                 else:
                     headers[key] = value
 
+        body = self.decode_chunked(body, headers)
+
         return status_code, reason, headers, body
+
+    def decode_chunked(self, body: bytes, headers: dict) -> bytes:
+        te = headers.get("transfer-encoding", "")
+        if isinstance(te, list):
+            te = te[-1]
+        if te.strip().lower() != "chunked":
+            return body
+
+        out = []
+        while body:
+            crlf = body.find(b"\r\n")
+            if crlf == -1:
+                break
+            size = int(body[:crlf].split(b";")[0].strip(), 16)
+            if size == 0:
+                break
+            chunk_start = crlf + 2
+            out.append(body[chunk_start: chunk_start + size])
+            body = body[chunk_start + size + 2:]
+
+        return b"".join(out)
+
+    def header(self, name: str) -> Optional[str]:
+        val = self.headers.get(name.lower())
+        if isinstance(val, list):
+            return val[-1]
+        return val
 
     @property
     def encoding(self) -> str:
@@ -53,7 +83,7 @@ class Response:
         return self.content.decode(self.encoding, errors="replace")
 
     def json(self):
-        return vjson.loads(self.text)
+        return vjson.loads(self.content)
 
     @property
     def ok(self) -> bool:
