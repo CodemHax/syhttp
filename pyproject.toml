@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "syhttp"
+version = "1.0.0"
+description = "A minimal async HTTP client"
+requires-python = ">=3.8"
+
+[project.urls]
+Homepage = "https://github.com/codemhax/syhttp"
