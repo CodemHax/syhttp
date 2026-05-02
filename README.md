@@ -1,5 +1,7 @@
 # syhttp
 
+![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
+
 A simple, asynchronous Python HTTP client built from scratch using pure `asyncio` streams. `syhttp` gives you an easy-to-use API for crafting completely raw HTTP requests without relying on large third-party libraries like `requests` or `aiohttp`.
 
 ## Features
@@ -112,4 +114,3 @@ response = await syhttp.post("https://example.com/login", data={"username": "bob
 ## License
 
 MIT License
-
