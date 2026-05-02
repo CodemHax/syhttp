@@ -1,5 +1,5 @@
 import asyncio
-from syhttp.src import get, post, put, delete
+from syhttp import get, post, put, delete
 
 async def main():
     r = await get("https://httpbin.org/get", params={"q": "hello"})

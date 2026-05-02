@@ -1,7 +1,7 @@
 import asyncio
-from syhttp.src.request import Request
-from syhttp.src.client import send
-from syhttp.src.response import Response
+from .request import Request
+from .client import send
+from .response import Response
 from typing import Any, Dict, Optional, Union
 
 

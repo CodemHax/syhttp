@@ -1,7 +1,7 @@
 import asyncio
-from syhttp.src.request import Request
-from syhttp.src.response import Response
-from syhttp.src.url import URL
+from .request import Request
+from .response import Response
+from .url import URL
 import ssl
 
 
@@ -24,10 +24,10 @@ async def send(request: Request) ->  Response:
               break
           raw += data
 
-          writer.close()
-          writer.close()
-          try:
-              await writer.wait_closed()
-          except ssl.SSLError:
-              pass
+      writer.close()
+      try:
+          await writer.wait_closed()
+      except ssl.SSLError:
+          pass
+
       return Response(raw)
