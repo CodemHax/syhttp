@@ -118,39 +118,47 @@ class Response:
         if "chunked" not in te.lower():
             return body
 
-        out = []
-        remaining = body
-        while remaining:
-            size_end = remaining.find(b"\r\n")
-            separator_len = 2
-            if size_end == -1:
-                size_end = remaining.find(b"\n")
+        out = bytearray()
+        pos = 0
+        body_len = len(body)
+
+        while pos < body_len:
+            crlf = body.find(b"\r\n", pos)
+            lf = body.find(b"\n", pos)
+
+            if crlf != -1 and (lf == -1 or crlf < lf):
+                size_end = crlf
+                separator_len = 2
+            elif lf != -1:
+                size_end = lf
                 separator_len = 1
-            if size_end == -1:
+            else:
                 raise RemoteProtocolError("Malformed chunk size line")
 
-            size_line = remaining[:size_end].strip()
+            size_line = body[pos:size_end].strip()
             try:
                 size = int(size_line.split(b";")[0], 16)
             except ValueError as exc:
                 raise RemoteProtocolError(f"Invalid chunk size: {size_line!r}") from exc
 
             data_start = size_end + separator_len
-            if len(remaining) < data_start + size:
+            if body_len < data_start + size:
                 raise RemoteProtocolError("Incomplete chunk payload")
             if size == 0:
-                return b"".join(out)
+                return bytes(out)
 
-            out.append(remaining[data_start: data_start + size])
-            remaining = remaining[data_start + size:]
-            if remaining.startswith(b"\r\n"):
-                remaining = remaining[2:]
-            elif remaining.startswith(b"\n"):
-                remaining = remaining[1:]
+            chunk_end = data_start + size
+            out.extend(body[data_start:chunk_end])
+            pos = chunk_end
+
+            if body[pos:pos + 2] == b"\r\n":
+                pos += 2
+            elif body[pos:pos + 1] == b"\n":
+                pos += 1
             else:
                 raise RemoteProtocolError("Missing chunk terminator")
 
-        return b"".join(out)
+        raise RemoteProtocolError("Incomplete chunked response body")
 
     @classmethod
     def header_from_map(cls, headers: dict, name: str) -> str:
