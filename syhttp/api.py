@@ -8,9 +8,13 @@ async def request(
     url: str,
     *,
     params=None, headers=None, json=None, data=None, cookies=None,
+    max_redirects: int = 10,
     connect_timeout: float = 5.0,
+    write_timeout: float = 30.0,
     read_timeout: float = 30.0,
+    pool_timeout: float = 5.0,
     retries: int = 3,
+    backoff_factor: float = 0.5,
 ) -> Response:
     req = Request(
         method,
@@ -21,7 +25,16 @@ async def request(
         data=data,
         cookies=cookies,
     )
-    return await send(req, retries=retries, connect_timeout=connect_timeout, read_timeout=read_timeout)
+    return await send(
+        req,
+        max_redirects=max_redirects,
+        retries=retries,
+        connect_timeout=connect_timeout,
+        write_timeout=write_timeout,
+        read_timeout=read_timeout,
+        pool_timeout=pool_timeout,
+        backoff_factor=backoff_factor,
+    )
 
 async def get(url: str, **kwargs) -> Response:
     return await request("GET", url, **kwargs)
@@ -40,4 +53,3 @@ async def patch(url: str, **kwargs) -> Response:
 
 async def head(url: str, **kwargs) -> Response:
     return await request("HEAD", url, **kwargs)
-
