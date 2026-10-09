@@ -17,6 +17,7 @@ A simple, asynchronous Python HTTP client built from scratch using pure `asyncio
   - Custom headers support.
 - **Raw Bytes Extraction**: Compile requests directly to raw HTTP bytes ready to be sent over a socket.
 - **Faster Response Reads**: Reads response bodies in larger chunks and joins them once, avoiding repeated byte copying.
+- **Automatic Response Decompression**: Decodes `gzip` and `deflate` encoded response bodies automatically.
 
 ## Installation
 

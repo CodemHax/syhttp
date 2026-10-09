@@ -1,4 +1,6 @@
 import json as vjson
+import gzip
+import zlib
 from typing import Optional
 from .exceptions import HTTPError
 
@@ -37,6 +39,7 @@ class Response:
                     headers[key] = value
 
         body = self.decode_chunked(body, headers)
+        body = self.decode_content(body, headers)
 
         return status_code, reason, headers, body
 
@@ -47,19 +50,42 @@ class Response:
         if te.strip().lower() != "chunked":
             return body
 
-        out = []
-        while body:
-            crlf = body.find(b"\r\n")
+        out = bytearray()
+        pos = 0
+        body_len = len(body)
+        while pos < body_len:
+            crlf = body.find(b"\r\n", pos)
             if crlf == -1:
                 break
-            size = int(body[:crlf].split(b";")[0].strip(), 16)
+            size = int(body[pos:crlf].split(b";")[0].strip(), 16)
+            pos = crlf + 2
             if size == 0:
                 break
-            chunk_start = crlf + 2
-            out.append(body[chunk_start: chunk_start + size])
-            body = body[chunk_start + size + 2:]
+            chunk_end = pos + size
+            out.extend(body[pos:chunk_end])
+            pos = chunk_end + 2
 
-        return b"".join(out)
+        return bytes(out)
+
+    def decode_content(self, body: bytes, headers: dict) -> bytes:
+        encoding = headers.get("content-encoding", "")
+        if isinstance(encoding, list):
+            encoding = encoding[-1]
+
+        codings = [part.strip().lower() for part in encoding.split(",") if part.strip()]
+        for coding in reversed(codings):
+            try:
+                if coding in {"gzip", "x-gzip"}:
+                    body = gzip.decompress(body)
+                elif coding == "deflate":
+                    try:
+                        body = zlib.decompress(body)
+                    except zlib.error:
+                        body = zlib.decompress(body, -zlib.MAX_WBITS)
+            except (OSError, EOFError, zlib.error):
+                return body
+
+        return body
 
     def header(self, name: str) -> Optional[str]:
         val = self.headers.get(name.lower())
