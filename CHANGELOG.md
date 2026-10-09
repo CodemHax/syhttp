@@ -2,6 +2,17 @@
 
 All notable changes to `syhttp` will be documented in this file.
 
+## [Unreleased]
+### Added
+- Added pooled keep-alive connection management with configurable pool acquisition timeout.
+- Added strict connect/write/read timeout handling and structured retry backoff for idempotent methods.
+- Added automatic redirect handling safeguards with typed redirect errors.
+- Added response decompression support for `gzip` and `deflate`.
+- Added richer exception hierarchy for URL, protocol, TLS, timeout, and network failures.
+### Changed
+- Improved response parsing robustness for mixed line endings, folded headers, and malformed header protection.
+- Switched default request `Connection` header to `keep-alive`.
+
 ## [1.2.2] - 2026-05-02
 ### Fixed
 - Prevent `Request` object mutation.
@@ -24,4 +35,3 @@ All notable changes to `syhttp` will be documented in this file.
 - Created `Request` Builder supporting `GET`, `POST`, query parameters, JSON, and form URL-encoded data.
 - Introduced high-level API methods (`syhttp.get`, `syhttp.post`).
 - Added basic `README.md` and `.gitignore` file.
-

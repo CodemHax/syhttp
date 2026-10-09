@@ -100,7 +100,7 @@ class Request:
             self.set_header_on(headers, "Host", host)
         self.set_default_header_on(headers, "User-Agent", "syhttp/1.0")
         self.set_default_header_on(headers, "Accept", "*/*")
-        self.set_default_header_on(headers, "Connection", "close")
+        self.set_default_header_on(headers, "Connection", "keep-alive")
 
         if self.cookies and not self.manual_cookie:
             self.set_header_on(
